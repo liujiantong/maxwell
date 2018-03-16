@@ -3,6 +3,7 @@ package com.zendesk.maxwell;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 
+import java.net.URISyntaxException;
 import java.util.Properties;
 
 /**
@@ -29,7 +30,7 @@ public class MaxwellClusterConfig extends MaxwellConfig {
 	@Override
 	protected OptionParser buildOptionParser() {
 		OptionParser parser = super.buildOptionParser();
-		parser.accepts( "zk_servers", "Zookeeper servers. default: localhost:2181" ).withOptionalArg();
+		parser.accepts( "zk_servers", "Zookeeper servers. default: localhost:2181" ).withRequiredArg();
 		return parser;
 	}
 

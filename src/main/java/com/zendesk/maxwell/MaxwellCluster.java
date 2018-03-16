@@ -21,7 +21,6 @@ import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.sql.SQLException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
@@ -33,13 +32,13 @@ public class MaxwellCluster extends LeaderSelectorListenerAdapter implements Run
 	private String name;
 	private String clientID;
 	private String leaderPath;
-	private String[] maxwelArgs;
+	private String[] maxwellArgs;
 
-	private AtomicBoolean isLeader;
 	private LeaderSelector leaderSelector;
 
 	private CuratorFramework curatorClient;
 	private Maxwell maxwell;
+	private volatile boolean isLeader;
 
 	private static final String MAXWELL_PATH = "/maxwell/leader/";
 
@@ -51,9 +50,9 @@ public class MaxwellCluster extends LeaderSelectorListenerAdapter implements Run
 		this.clientID = config.clientID;
 		this.leaderPath = path;
 		this.curatorClient = curator;
-		this.isLeader = new AtomicBoolean(false);
+		this.isLeader = false;
 		this.name = clientID + ":" + getId();
-		this.maxwelArgs = args;
+		this.maxwellArgs = args;
 
 		if ( config.log_level != null )
 			Logging.setLevel(config.log_level);
@@ -68,7 +67,6 @@ public class MaxwellCluster extends LeaderSelectorListenerAdapter implements Run
 
 		// for most cases you will want your instance to requeue when it relinquishes leadership
 		leaderSelector.autoRequeue();
-		// leaderSelector.start();
 	}
 
 	public void run() {
@@ -100,6 +98,7 @@ public class MaxwellCluster extends LeaderSelectorListenerAdapter implements Run
 		// we are now the leader. This method should not return until we want to relinquish leadership
 		LOGGER.info("{}: I'm now the leader", this.name);
 		try {
+			isLeader = false;
 			maxwell.run();
 		} finally {
 			LOGGER.info("I relinquish leadership");
@@ -110,10 +109,11 @@ public class MaxwellCluster extends LeaderSelectorListenerAdapter implements Run
 		LOGGER.info("MaxwellCluster reset");
 
 		try {
+			isLeader = false;
 			maxwell.terminate();
 
 			// config reset metrics
-			MaxwellConfig config = new MaxwellConfig(maxwelArgs);
+			MaxwellConfig config = new MaxwellConfig(maxwellArgs);
 			maxwell = new Maxwell(config);
 		} catch (Exception e) {
 			LOGGER.warn("Create Maxwell error: {}", e);
@@ -155,11 +155,11 @@ public class MaxwellCluster extends LeaderSelectorListenerAdapter implements Run
 	public static void main(String[] args) {
 		try {
 			Logging.setupLogBridging();
-			LOGGER.info("MaxwellCluster start...");
 
 			MaxwellClusterConfig config = new MaxwellClusterConfig(args);
-			if (config.clientID == null) {
-				throw new URISyntaxException("client_id", "ERROR: client_id not set");
+
+			if ("maxwell".equals(config.clientID)) {
+				throw new URISyntaxException("clientID is maxwell", "client_id with default value not allowed");
 			}
 
 			RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 5);
@@ -178,17 +178,17 @@ public class MaxwellCluster extends LeaderSelectorListenerAdapter implements Run
 
 			cluster.start();
 
-			while (true) {
-				TimeUnit.SECONDS.sleep(10);
+			while (!cluster.isLeader) {
+				TimeUnit.SECONDS.sleep(3);
 			}
 		} catch ( SQLException e ) {
 			// catch SQLException explicitly because we likely don't care about the stacktrace
-			LOGGER.error("SQLException: " + e.getLocalizedMessage());
+			LOGGER.error("SQLException: {}", e.getLocalizedMessage());
 			System.exit(1);
 		} catch ( URISyntaxException e ) {
 			// catch URISyntaxException explicitly as well to provide more information to the user
 			LOGGER.error("Syntax issue with URI, check for client_id, misconfigured host, port, database, or JDBC options (see RFC 2396)");
-			LOGGER.error("URISyntaxException: " + e.getLocalizedMessage());
+			LOGGER.error("URISyntaxException: {}", e.getLocalizedMessage());
 			System.exit(1);
 		} catch ( Exception e ) {
 			e.printStackTrace();

@@ -20,6 +20,16 @@ metrics collection, search indexing and inter-service communication.
 <br/>
 &rarr; Source:
 [https://github.com/zendesk/maxwell](https://github.com/zendesk/maxwell)
+<br/>
+&rarr; Build:
+```
+mvn package -DskipTests
+```
+<br/>
+&rarr; Add 2 features for this fork:
+* Fail over: start multiple maxwell instances with only one leader. So you need to provider zookeeper config using `zk_servers` (default: localhost:2181)
+* Column names case transform: using `key_case` you could transform tables' column names to lower case or upper case or keep them original just ignore it
+* e.g. maxwell-cluster --zk-servers=localhost:2181 --key_case=lower --producer=stdout
 
 <br style="clear:both"/>
 

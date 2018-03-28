@@ -157,6 +157,7 @@ public class MaxwellCluster extends LeaderSelectorListenerAdapter implements Run
 			Logging.setupLogBridging();
 
 			MaxwellClusterConfig config = new MaxwellClusterConfig(args);
+			// LOGGER.info("lower_key:{}", config.outputConfig.lowerKey);
 
 			if ("maxwell".equals(config.clientID)) {
 				throw new URISyntaxException("clientID is maxwell", "client_id with default value not allowed");

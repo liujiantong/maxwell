@@ -17,6 +17,7 @@ public class MaxwellOutputConfig {
 	public List<Pattern> excludeColumns;
 	public EncryptionMode encryptionMode;
 	public String secretKey;
+	public String keyCase;
 
 	public MaxwellOutputConfig() {
 		this.includesBinlogPosition = false;
@@ -30,6 +31,7 @@ public class MaxwellOutputConfig {
 		this.excludeColumns = new ArrayList<>();
 		this.encryptionMode = EncryptionMode.ENCRYPT_NONE;
 		this.secretKey = null;
+		this.keyCase = "original";
 	}
 
 	public boolean encryptionEnabled() {

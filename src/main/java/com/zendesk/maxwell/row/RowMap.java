@@ -213,7 +213,8 @@ public class RowMap implements Serializable {
 			String jsonMapName,
 			LinkedHashMap<String, Object> data,
 			JsonGenerator g,
-			boolean includeNullField
+			boolean includeNullField,
+			String keyCase
 	) throws IOException, NoSuchAlgorithmException {
 		g.writeObjectFieldStart(jsonMapName);
 
@@ -226,17 +227,35 @@ public class RowMap implements Serializable {
 			if (value instanceof List) { // sets come back from .asJSON as lists, and jackson can't deal with lists natively.
 				List stringList = (List) value;
 
-				g.writeArrayFieldStart(key);
+				if ("lower".equalsIgnoreCase(keyCase)) {
+					g.writeArrayFieldStart(key.toLowerCase());
+				} else if ("upper".equalsIgnoreCase(keyCase)) {
+					g.writeArrayFieldStart(key.toUpperCase());
+				} else {
+					g.writeArrayFieldStart(key);
+				}
 				for (Object s : stringList) {
 					g.writeObject(s);
 				}
 				g.writeEndArray();
 			} else if (value instanceof RawJSONString) {
 				// JSON column type, using binlog-connector's serializers.
-				g.writeFieldName(key);
+				if ("lower".equalsIgnoreCase(keyCase)) {
+					g.writeFieldName(key.toLowerCase());
+				} else if ("upper".equalsIgnoreCase(keyCase)) {
+					g.writeFieldName(key.toUpperCase());
+				} else {
+					g.writeFieldName(key);
+				}
 				g.writeRawValue(((RawJSONString) value).json);
 			} else {
-				g.writeObjectField(key, value);
+				if ("lower".equalsIgnoreCase(keyCase)) {
+					g.writeObjectField(key.toLowerCase(), value);
+				} if ("upper".equalsIgnoreCase(keyCase)) {
+					g.writeObjectField(key.toUpperCase(), value);
+				} else {
+					g.writeObjectField(key, value);
+				}
 			}
 		}
 
@@ -317,9 +336,9 @@ public class RowMap implements Serializable {
 			: plaintextDataGeneratorThreadLocal.get();
 
 		JsonGenerator dataGenerator = dataWriter.begin();
-		writeMapToJSON(FieldNames.DATA, this.data, dataGenerator, outputConfig.includesNulls);
+		writeMapToJSON(FieldNames.DATA, this.data, dataGenerator, outputConfig.includesNulls, outputConfig.keyCase);
 		if( !this.oldData.isEmpty() ){
-			writeMapToJSON(FieldNames.OLD, this.oldData, dataGenerator, outputConfig.includesNulls);
+			writeMapToJSON(FieldNames.OLD, this.oldData, dataGenerator, outputConfig.includesNulls, outputConfig.keyCase);
 		}
 		dataWriter.end(encryptionContext);
 

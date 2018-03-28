@@ -25,12 +25,14 @@ public class MaxwellClusterConfig extends MaxwellConfig {
 			properties = parseFile(DEFAULT_CONFIG_FILE, false);
 		}
 		this.zookeeperServers = fetchOption("zk_servers", options, properties, "localhost:2181");
+		this.outputConfig.keyCase = fetchOption("key_case", options, properties, "original");
 	}
 
 	@Override
 	protected OptionParser buildOptionParser() {
 		OptionParser parser = super.buildOptionParser();
 		parser.accepts( "zk_servers", "Zookeeper servers. default: localhost:2181" ).withRequiredArg();
+		parser.accepts( "key_case", "Transfer all column name to lower/upper case. default: original" ).withOptionalArg();
 		return parser;
 	}
 
